@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://celloist61.github.io/melody-brand-website/sitemap.xml
