@@ -1,0 +1,47 @@
+/* Mobile Story art direction — preview branch only */
+@media (max-width:760px){
+  /* Keep one chapter compact enough to read photo + story + action together. */
+  .story-ui{gap:12px}
+  .stage{display:flex;flex-direction:column;min-height:0}
+  .photo{width:100%;min-height:0;overflow:hidden;background:var(--note)}
+  .photo img{width:100%;height:100%;display:block;object-fit:cover}
+  .copy{padding:18px 20px 20px;justify-content:flex-start}
+  .copy .num{font-size:9px;line-height:1.3}
+  .copy h3{font-size:21px;line-height:1.35;margin:5px 0 10px}
+  .copy p{font-size:13.5px;line-height:1.55}
+  .copy .stanza{margin-top:7px}
+  .next{margin-top:12px;min-height:34px;font-size:12px}
+
+  /* Per-chapter crop permissions supplied by Melody. */
+  .stage[data-story="01"] .photo{height:clamp(190px,30vh,260px)}
+  .stage[data-story="01"] .photo img{object-position:50% 42%}
+
+  /* 02 is intentionally uncropped. */
+  .stage[data-story="02"] .photo{height:auto}
+  .stage[data-story="02"] .photo img{height:auto;object-fit:contain}
+
+  .stage[data-story="03"] .photo{height:clamp(180px,28vh,245px)}
+  .stage[data-story="03"] .photo img{object-position:50% 50%}
+
+  .stage[data-story="04"] .photo{height:clamp(180px,28vh,240px)}
+  .stage[data-story="04"] .photo img{object-position:50% 62%}
+
+  .stage[data-story="05"] .photo{height:clamp(135px,21vh,185px)}
+  .stage[data-story="05"] .photo img{object-position:50% 50%}
+  .stage[data-story="05"] .copy{padding-top:14px;padding-bottom:16px}
+  .stage[data-story="05"] .copy h3{font-size:19px;margin-bottom:7px}
+  .stage[data-story="05"] .copy p{font-size:12.5px;line-height:1.42}
+  .stage[data-story="05"] .copy .stanza{margin-top:5px}
+  .stage[data-story="05"] .next{margin-top:8px}
+
+  .stage[data-story="06"] .photo{height:clamp(130px,20vh,180px)}
+  .stage[data-story="06"] .photo img{object-position:50% 64%}
+  .stage[data-story="06"] .copy{padding-top:14px;padding-bottom:16px}
+  .stage[data-story="06"] .copy h3{font-size:19px;margin-bottom:7px}
+  .stage[data-story="06"] .copy p{font-size:12.5px;line-height:1.42}
+  .stage[data-story="06"] .copy .stanza{margin-top:5px}
+  .stage[data-story="06"] .next{margin-top:8px}
+
+  .stage[data-story="07"] .photo{height:clamp(205px,32vh,275px)}
+  .stage[data-story="07"] .photo img{object-position:50% 64%}
+}
