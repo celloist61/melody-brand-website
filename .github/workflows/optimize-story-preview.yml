@@ -14,45 +14,33 @@ jobs:
           ref: about-learning-preview
       - name: Install Pillow
         run: python -m pip install --quiet pillow
-      - name: Build isolated optimized Story assets
+      - name: Keep smallest visually equivalent Story assets
         shell: python
         run: |
           from pathlib import Path
           from PIL import Image, ImageOps
           from urllib.request import urlretrieve
-          html=Path('about-preview.html')
-          s=html.read_text(encoding='utf-8')
-          original=s
-          s=s.replace('.photo img{width:100%;height:100%;min-height:540px;display:block;object-fit:cover}', '.photo img{width:100%;height:auto;min-height:0;display:block;object-fit:contain}')
-          s=s.replace('.photo{aspect-ratio:4/3}.photo img{height:100%;object-fit:cover}', '.photo{aspect-ratio:auto}.photo img{height:auto;object-fit:contain}')
+          import shutil
+          html=Path('about-preview.html'); s=html.read_text(encoding='utf-8')
           sources=['story-01.jpg','story-02-correct.jpg','story-03.jpg','story-04.jpg','story-05a.jpg','story-06-correct.png','story-07-github.jpg']
-          Path('assets').mkdir(exist_ok=True)
           for i,name in enumerate(sources,1):
-              tmp=Path('/tmp')/name
-              url='https://raw.githubusercontent.com/celloist61/melody-brand-website/main/assets/'+name
-              urlretrieve(url,tmp)
+              tmp=Path('/tmp')/name; urlretrieve('https://raw.githubusercontent.com/celloist61/melody-brand-website/main/assets/'+name,tmp)
               im=ImageOps.exif_transpose(Image.open(tmp)).convert('RGB')
-              maxw=1400
-              if im.width>maxw:
-                  im=im.resize((maxw,round(im.height*maxw/im.width)),Image.Resampling.LANCZOS)
-              out=Path('assets')/f'preview-story-{i:02d}.jpg'
-              im.save(out,'JPEG',quality=84,optimize=True,progressive=True)
-              s=s.replace("img:'"+name+"'", "img:'preview-story-%02d.jpg'"%i)
+              if im.width>1400: im=im.resize((1400,round(im.height*1400/im.width)),Image.Resampling.LANCZOS)
+              out=Path('assets')/f'preview-story-{i:02d}.jpg'; candidate=Path('/tmp')/f'candidate-{i}.jpg'
+              im.save(candidate,'JPEG',quality=84,optimize=True,progressive=True)
+              # For existing JPEGs, never make the payload larger than the original.
+              if tmp.suffix.lower() in ('.jpg','.jpeg') and candidate.stat().st_size >= tmp.stat().st_size:
+                  shutil.copyfile(tmp,out)
+              else: shutil.copyfile(candidate,out)
               print(name,tmp.stat().st_size,'->',out.stat().st_size)
-          old="src=\"'+base+s.img+'\""
-          new="src=\"'+(s.img.startsWith('preview-story-')?'assets/':base)+s.img+'\" decoding=\"async\""
-          if old not in s: raise SystemExit('Story renderer marker missing')
-          s=s.replace(old,new,1)
-          if s==original: raise SystemExit('No About changes made')
-          html.write_text(s,encoding='utf-8')
-          final=html.read_text(encoding='utf-8')
-          for term in ['01</span>','02</span>','03</span>','04</span>','05</span>','06</span>','07</span>','HOW I KEEP LEARNING','每一次進修，都是為了更懂你的身體。','美地 Melody</span><span class="nav-en">About','preview-story-01.jpg','preview-story-07.jpg']:
-              if term not in final: raise SystemExit('QA missing: '+term)
+          for term in ['01</span>','02</span>','03</span>','04</span>','05</span>','06</span>','07</span>','HOW I KEEP LEARNING','每一次進修，都是為了更懂你的身體。','preview-story-01.jpg','preview-story-07.jpg']:
+              if term not in s: raise SystemExit('QA missing: '+term)
       - name: Commit optimized preview
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add about-preview.html assets/preview-story-*.jpg
+          git add assets/preview-story-*.jpg
           git diff --cached --quiet && exit 0
-          git commit -m "Optimize Story images without cropping"
+          git commit -m "Reduce Story image payload"
           git push origin HEAD:about-learning-preview
