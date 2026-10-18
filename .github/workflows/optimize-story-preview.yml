@@ -1,0 +1,84 @@
+name: Optimize Story preview images
+on:
+  push:
+    branches: [about-learning-preview]
+    paths: ['.github/workflows/optimize-story-preview.yml']
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: about-learning-preview
+      - name: Install Pillow
+        run: python -m pip install --quiet pillow
+      - name: Optimize Story images and preserve full composition
+        shell: python
+        run: |
+          from pathlib import Path
+          from PIL import Image, ImageOps
+          import re
+          html=Path('about-preview.html')
+          s=html.read_text(encoding='utf-8')
+          original=s
+          # Story images: keep natural aspect ratio; no cover-cropping.
+          s=s.replace('object-fit:cover','object-fit:contain')
+          # Remove fixed mobile Story image ratio if present.
+          s=s.replace('aspect-ratio:4/3;','')
+          # Add browser-native lazy decoding to story images except first visible story image.
+          story_pat=re.compile(r'(<img\b[^>]*src="assets/story-[^"]+"[^>]*)(>)')
+          count=0
+          def attrs(m):
+              global count
+              count += 1
+              tag=m.group(1)
+              if 'decoding=' not in tag: tag += ' decoding="async"'
+              if count > 1 and 'loading=' not in tag: tag += ' loading="lazy"'
+              return tag+m.group(2)
+          s=story_pat.sub(attrs,s)
+          if s == original: raise SystemExit('No Story HTML/CSS changes detected')
+          html.write_text(s,encoding='utf-8')
+
+          # Optimize only the Story assets actually referenced by About.
+          refs=[]
+          for src in re.findall(r'src="assets/(story-[^"]+)"',s):
+              if src not in refs: refs.append(src)
+          if len(refs) < 7: raise SystemExit(f'Expected at least 7 Story image refs, got {len(refs)}: {refs}')
+          for name in refs:
+              p=Path('assets')/name
+              if not p.exists(): raise SystemExit(f'Missing Story asset: {p}')
+              before=p.stat().st_size
+              im=Image.open(p)
+              im=ImageOps.exif_transpose(im).convert('RGB')
+              maxw=1600
+              if im.width > maxw:
+                  h=round(im.height*maxw/im.width)
+                  im=im.resize((maxw,h),Image.Resampling.LANCZOS)
+              # Keep same filenames/URLs; encode JPEG files efficiently. PNG remains PNG if referenced as PNG.
+              if p.suffix.lower() in ('.jpg','.jpeg'):
+                  im.save(p,'JPEG',quality=84,optimize=True,progressive=True)
+              elif p.suffix.lower()=='.png':
+                  # Convert photo-like PNG to optimized JPEG and update only its exact reference.
+                  new=p.with_suffix('.jpg')
+                  im.save(new,'JPEG',quality=84,optimize=True,progressive=True)
+                  s=s.replace('assets/'+p.name,'assets/'+new.name)
+                  p.unlink()
+                  p=new
+              after=p.stat().st_size
+              print(name,before,'->',after)
+          html.write_text(s,encoding='utf-8')
+
+          # Safety checks: all 7 chapters and Learning/closing must survive.
+          final=html.read_text(encoding='utf-8')
+          for term in ['01</span>','02</span>','03</span>','04</span>','05</span>','06</span>','07</span>','HOW I KEEP LEARNING','每一次進修，都是為了更懂你的身體。','美地 Melody</span><span class="nav-en">About']:
+              if term not in final: raise SystemExit('QA missing: '+term)
+      - name: Commit optimized preview
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add about-preview.html assets/
+          git diff --cached --quiet && exit 0
+          git commit -m "Optimize Story images without cropping"
+          git push origin HEAD:about-learning-preview
