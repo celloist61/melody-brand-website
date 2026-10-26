@@ -1,0 +1,12 @@
+{
+  "redirects": [
+    { "source": "/about-melody", "destination": "/about.html", "permanent": true },
+    { "source": "/about-melody/", "destination": "/about.html", "permanent": true },
+    { "source": "/about", "destination": "/about.html", "permanent": true },
+    { "source": "/about/", "destination": "/about.html", "permanent": true },
+    { "source": "/gyrotonic", "destination": "/gyrotonic.html", "permanent": true },
+    { "source": "/gyrotonic/", "destination": "/gyrotonic.html", "permanent": true },
+    { "source": "/learning-map", "destination": "/learning-map.html", "permanent": true },
+    { "source": "/learning-map/", "destination": "/learning-map.html", "permanent": true }
+  ]
+}
