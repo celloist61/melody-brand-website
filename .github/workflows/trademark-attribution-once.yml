@@ -18,14 +18,15 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          files = [Path('index.html'), Path('gyrotonic.html'), Path('learning-map.html'), Path('about.html')]
-          old = 'GYROTONIC® 與 GYROKINESIS® 為 GYROTONIC Sales Corp. 的註冊商標。'
           new = '嬋柔®、嬋柔® & 標誌、GYROTONIC® & 標誌、GYROTONIC®、GYROKINESIS®、Ultima®、ULTIMA REVEAL®、ARCHWAY®，和 GYROTONER® 均為 Gyrotonic Sales Corp. 的註冊商標，並已獲得使用許可。'
-          for p in files:
+          plain_old = 'GYROTONIC® 與 GYROKINESIS® 為 GYROTONIC Sales Corp. 的註冊商標。'
+          styled_old = '<span class="tm">GYROTONIC®</span> 與 <span class="tm">GYROKINESIS®</span> 為 GYROTONIC Sales Corp. 的註冊商標。'
+          expected = {Path('index.html'): plain_old, Path('gyrotonic.html'): plain_old, Path('about.html'): plain_old, Path('learning-map.html'): styled_old}
+          for p, old in expected.items():
               text = p.read_text(encoding='utf-8')
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'{p}: expected exactly one old attribution, found {count}')
+                  raise SystemExit(f'{p}: expected exactly one attribution target, found {count}')
               updated = text.replace(old, new)
               if updated.count(new) != 1:
                   raise SystemExit(f'{p}: new attribution verification failed')
