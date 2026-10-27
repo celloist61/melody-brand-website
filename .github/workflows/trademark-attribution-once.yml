@@ -1,0 +1,41 @@
+name: One-time trademark attribution migration
+on:
+  push:
+    branches:
+      - trademark-attribution-20261027
+    paths:
+      - .github/workflows/trademark-attribution-once.yml
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: trademark-attribution-20261027
+      - name: Apply exact attribution replacement
+        shell: python
+        run: |
+          from pathlib import Path
+          files = [Path('index.html'), Path('gyrotonic.html'), Path('learning-map.html'), Path('about.html')]
+          old = 'GYROTONIC® 與 GYROKINESIS® 為 GYROTONIC Sales Corp. 的註冊商標。'
+          new = '嬋柔®、嬋柔® & 標誌、GYROTONIC® & 標誌、GYROTONIC®、GYROKINESIS®、Ultima®、ULTIMA REVEAL®、ARCHWAY®，和 GYROTONER® 均為 Gyrotonic Sales Corp. 的註冊商標，並已獲得使用許可。'
+          for p in files:
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{p}: expected exactly one old attribution, found {count}')
+              updated = text.replace(old, new)
+              if updated.count(new) != 1:
+                  raise SystemExit(f'{p}: new attribution verification failed')
+              p.write_text(updated, encoding='utf-8')
+          Path('.github/workflows/trademark-attribution-once.yml').unlink()
+      - name: Commit exact four-page change and remove migration workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          test "$(git diff --name-only | sort)" = $'.github/workflows/trademark-attribution-once.yml\nabout.html\ngyrotonic.html\nindex.html\nlearning-map.html'
+          git add index.html gyrotonic.html learning-map.html about.html .github/workflows/trademark-attribution-once.yml
+          git commit -m "Update full Taiwan trademark attribution"
+          git push origin HEAD:trademark-attribution-20261027
